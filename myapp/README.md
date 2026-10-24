@@ -33,14 +33,28 @@ Use the Expo CLI prompts to open the app on a device, emulator, or web browser. 
 
 ## Android APK
 
-An EAS `preview` profile is configured to produce an installable APK:
+This project uses Expo SDK 58 and Expo Router. The app entry point is `expo-router/entry`, and routes are under `src/app/Screens`. The existing app name, Android package name, icons, splash screen, and location permission configuration are defined in `app.json`.
+
+The EAS `preview` profile in `eas.json` is configured to produce an installable Android APK. The `production` profile produces an Android app bundle (AAB), which is intended for store distribution.
+
+To build an APK with EAS Build:
 
 ```bash
-npx eas-cli@latest login
-npx eas-cli@latest build --platform android --profile preview
+npm install --global eas-cli
+eas login
+eas build:configure
+eas build --platform android --profile preview
 ```
 
-EAS Build runs remotely and requires an Expo account. Follow the CLI prompts to link/configure the EAS project and Android signing credentials. Download the generated APK from the build page when the build finishes. This repository does not include a prebuilt APK.
+EAS Build runs remotely and requires an Expo account. The project must be linked to your Expo account; run `eas build:configure` and follow its prompts if it is not linked yet. EAS can create or use Android signing credentials during setup; do not commit private signing credentials to this repository.
+
+When the build completes, download the APK using the artifact link printed by the CLI or from the project's **Builds** page in the Expo dashboard. This repository does not include a prebuilt APK. A local Windows release build was also attempted but could not complete because a generated native C++ build path exceeded the Windows 260-character path limit; the configured cloud EAS build is the recommended APK build path.
+
+### Build configuration checks
+
+- `npx expo install --check`: passed; installed packages match the Expo SDK.
+- `npx expo-doctor`: passed all 20 checks.
+- The app's API base URL is currently a hard-coded local HTTP address in `src/app/Common/Global.js`. For device API requests to work, the backend must be reachable from the device; this does not block EAS APK generation.
 
 ## Validation
 
