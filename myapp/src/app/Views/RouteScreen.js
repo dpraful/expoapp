@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   Platform,
   ScrollView,
@@ -10,6 +10,7 @@ import {
 import Icons from '../Common/Icons';
 import { Global } from '../Common/Global';
 import HShadowButton from '../HOC/HShadowButton';
+import Loader from '../CommonStyle/Loader';
 
 const routeModes = [
   { id: 'Drive', icon: 'car', duration: '24 min', distance: '9.6 km' },
@@ -34,9 +35,36 @@ export default function RouteScreen({
   destination = 'Destination',
   onBack,
 }) {
+  const navigationTimeout = useRef(null);
   const [selectedMode, setSelectedMode] = useState('Drive');
   const [isNavigating, setIsNavigating] = useState(false);
+  const [isStartingNavigation, setIsStartingNavigation] = useState(false);
   const mode = routeModes.find(item => item.id === selectedMode) || routeModes[0];
+
+  useEffect(() => {
+    return () => {
+      if (navigationTimeout.current) {
+        clearTimeout(navigationTimeout.current);
+      }
+    };
+  }, []);
+
+  const toggleNavigation = () => {
+    if (isNavigating) {
+      setIsNavigating(false);
+      return;
+    }
+    if (isStartingNavigation) {
+      return;
+    }
+
+    setIsStartingNavigation(true);
+    navigationTimeout.current = setTimeout(() => {
+      navigationTimeout.current = null;
+      setIsStartingNavigation(false);
+      setIsNavigating(true);
+    }, 500);
+  };
 
   const arrivalTime = () => {
     const arrival = new Date();
@@ -243,7 +271,9 @@ export default function RouteScreen({
         <View style={styles.footer}>
           <HShadowButton
             accessibilityRole="button"
-            buttonCallback={() => setIsNavigating(value => !value)}
+            disabled={isStartingNavigation}
+            accessibilityState={{ disabled: isStartingNavigation }}
+            buttonCallback={toggleNavigation}
             buttonstyle={[styles.buttonReset, styles.startButton]}>
             <Icons.FontAwesome5
               name={isNavigating ? 'stop' : 'location-arrow'}
@@ -256,6 +286,9 @@ export default function RouteScreen({
           </HShadowButton>
         </View>
       </View>
+      {isStartingNavigation && (
+        <Loader visible={isStartingNavigation} message="Starting navigation..." />
+      )}
     </View>
   );
 }

@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import {
-  ActivityIndicator,
   Modal,
   Platform,
   ScrollView,
@@ -14,6 +13,7 @@ import * as Location from 'expo-location';
 import Icons from '../Common/Icons';
 import { Global } from '../Common/Global';
 import HShadowButton from '../HOC/HShadowButton';
+import Loader from '../CommonStyle/Loader';
 
 const suggestedLocations = [
   {
@@ -343,18 +343,12 @@ export default function HomeScreen(props) {
             accessibilityState={{ disabled: isFindingLocation }}
             buttonCallback={useCurrentLocation}
             buttonstyle={[styles.buttonReset, styles.actionButton]}>
-            {isFindingLocation ? (
-              <ActivityIndicator color={Global.AppTheme.login_heading_color} />
-            ) : (
-              <Icons.FontAwesome5
-                name="crosshairs"
-                color={Global.AppTheme.login_heading_color}
-                size={18}
-              />
-            )}
-            <Text style={styles.actionText}>
-              {isFindingLocation ? 'Locating…' : 'Use current'}
-            </Text>
+            <Icons.FontAwesome5
+              name="crosshairs"
+              color={Global.AppTheme.login_heading_color}
+              size={18}
+            />
+            <Text style={styles.actionText}>Use current</Text>
           </HShadowButton>
           <HShadowButton
             accessibilityRole="button"
@@ -453,6 +447,9 @@ export default function HomeScreen(props) {
         </View>
       </Modal>
 
+      {isFindingLocation && (
+        <Loader visible={isFindingLocation} message="Finding your location..." />
+      )}
     </View>
   );
 }

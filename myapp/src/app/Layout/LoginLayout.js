@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -16,16 +16,28 @@ import { BackHandler } from 'react-native';
 import { useRouter } from 'expo-router';
 import HShadowButton from '../HOC/HShadowButton';
 import { useAppContext } from '../Handlers/GlobalContext';
+import Loader from '../CommonStyle/Loader';
 
 export default function LoginLayout() {
   const clearing = useRef(null);
+  const loginTimeout = useRef(null);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const [toastMsg, setToastMsg] = useState('');
   const [showAlert, setShowAlert] = useState(false);
   const [secureText, setSecureText] = useState(true);
   const router = useRouter()
   const { registeredAccount } = useAppContext();
+
+  useEffect(() => {
+    return () => {
+      if (loginTimeout.current) {
+        clearTimeout(loginTimeout.current);
+        loginTimeout.current = null;
+      }
+    };
+  }, []);
 
   // Animation values
   const fadeAnim = useState(new Animated.Value(0))[0];
@@ -76,20 +88,29 @@ export default function LoginLayout() {
     }).start(() => setShowAlert(false));
   };
 
-  useEffect(() => {
-    const backAction = () => {
-      router.back();
-      // Returning true means you handled the back press
-      return true;
-    };
-    const backHandler = BackHandler.addEventListener(
-      'hardwareBackPress',
-      backAction,
-    );
-    return () => backHandler.remove();
+  const handleBack = useCallback(() => {
+    if (loginTimeout.current) {
+      clearTimeout(loginTimeout.current);
+      loginTimeout.current = null;
+    }
+    setIsLoading(false);
+    router.back();
+    return true;
   }, [router]);
 
+  useEffect(() => {
+    const backHandler = BackHandler.addEventListener(
+      'hardwareBackPress',
+      handleBack,
+    );
+    return () => backHandler.remove();
+  }, [handleBack]);
+
   const validateLogin = () => {
+    if (isLoading || loginTimeout.current) {
+      return;
+    }
+
     const email = (registeredAccount?.email || username).trim();
     let message = '';
 
@@ -106,7 +127,12 @@ export default function LoginLayout() {
     ) {
       message = 'Email or password does not match the account created this session.';
     } else {
-      router.navigate('/Dashboard');
+      setIsLoading(true);
+      loginTimeout.current = setTimeout(() => {
+        loginTimeout.current = null;
+        setIsLoading(false);
+        router.navigate('/Dashboard');
+      }, 500);
     }
 
     setToastMsg(message);
@@ -254,6 +280,13 @@ export default function LoginLayout() {
             </HShadowButton>
           </View>
         </Animated.View>
+      )}
+      {isLoading && (
+        <Loader
+          visible={isLoading}
+          message="Signing in..."
+          onRequestClose={handleBack}
+        />
       )}
     </KeyboardAvoidingView>
   );

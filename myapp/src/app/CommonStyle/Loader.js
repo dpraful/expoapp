@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import {
   StyleSheet,
-  Dimensions,
   View,
   Modal,
   Animated,
@@ -13,18 +12,23 @@ import {
 import { normalize } from '../CommonStyle/ComponentFunctions';
 import { APIURL } from "../Common/apiConstants";
 
+const DEFAULT_GIF_SOURCE = {
+  uri: `${APIURL}insurancefile/getCommonFile/image/heartpulse.gif`,
+};
+
 export default function Loader({
   visible = true,
   overlayColor = 'rgba(0,0,0,0.4)',
   loaderColor = 'lightblue',
   size = 50,
-  gifSource = {uri:`${APIURL}insurancefile/getCommonFile/image/heartpulse.gif`},
+  gifSource = DEFAULT_GIF_SOURCE,
   message = '',
   messageStyle = {},
   animationType = 'fade',
   hasBackground = true,
   borderRadius = 20,
-  shadow = true
+  shadow = true,
+  onRequestClose = () => {}
 }) {
   const [rotation] = useState(new Animated.Value(0));
   const [pulse] = useState(new Animated.Value(1));
@@ -32,19 +36,21 @@ export default function Loader({
 
   // Rotation animation
   useEffect(() => {
+    let rotationAnimation;
     if (!gifSource) { // Only animate if not using a GIF
-      Animated.loop(
+      rotationAnimation = Animated.loop(
         Animated.timing(rotation, {
           toValue: 1,
           duration: 1500,
           easing: Easing.linear,
           useNativeDriver: true
         })
-      ).start();
+      );
+      rotationAnimation.start();
     }
 
     // Pulse animation
-    Animated.loop(
+    const pulseAnimation = Animated.loop(
       Animated.sequence([
         Animated.timing(pulse, {
           toValue: 1.1,
@@ -57,15 +63,25 @@ export default function Loader({
           useNativeDriver: true
         })
       ])
-    ).start();
+    );
+    pulseAnimation.start();
 
     // Fade in animation
-    Animated.timing(fade, {
+    const fadeAnimation = Animated.timing(fade, {
       toValue: 1,
       duration: 300,
       useNativeDriver: true
-    }).start();
-  }, []);
+    });
+    fadeAnimation.start();
+
+    return () => {
+      if (rotationAnimation) {
+        rotationAnimation.stop();
+      }
+      pulseAnimation.stop();
+      fadeAnimation.stop();
+    };
+  }, [fade, gifSource, pulse, rotation]);
 
   const spin = rotation.interpolate({
     inputRange: [0, 1],
@@ -104,7 +120,7 @@ export default function Loader({
       animationType={animationType}
       transparent={true}
       visible={visible}
-      onRequestClose={() => {}}
+      onRequestClose={onRequestClose}
     >
       <Animated.View style={[
         styles.modalContainer,
